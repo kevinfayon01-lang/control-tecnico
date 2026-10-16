@@ -5,7 +5,8 @@ const FORMSPREE_URL = "https://formspree.io";
 let trabajos = JSON.parse(localStorage.getItem('tech_trabajos')) || [];
 let visitas = JSON.parse(localStorage.getItem('tech_visitas')) || [];
 
-function switchTab(tabName, event) {
+// FUNCIÓN PARA CAMBIAR PESTAÑAS (Asegurada de forma global)
+window.switchTab = function(tabName, event) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
@@ -56,42 +57,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const datosTrabajo = {
                 id: id ? parseInt(id) : Date.now(),
-                cliente, 
-                rubro, 
-                montoTotal, 
-                estado, 
-                señaAbonada,
+                cliente, rubro, montoTotal, estado, señaAbonada,
                 descripcion: desc,
                 fecha: new Date().toLocaleDateString('es-AR')
             };
 
             if (id) {
-                // Modo Edición
                 trabajos = trabajos.map(t => t.id === datosTrabajo.id ? datosTrabajo : t);
                 alert("¡Registro de trabajo actualizado! ✏️");
             } else {
-                // Modo Nuevo Registro
                 trabajos.push(datosTrabajo);
                 alert("¡Guardado en caja correctamente! 💰");
                 
-                // Respaldo por correo a tu Formspree
                 fetch(FORMSPREE_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ 
-                        Rubro: rubro, 
-                        Cliente: cliente, 
-                        Monto_Total: `$${montoTotal}`, 
-                        Seña_Cobrada: estado === 'Seña' ? `$${señaAbonada}` : 'No aplica',
-                        Estado: estado,
-                        Detalle: desc 
-                    })
-                }).catch(() => console.log("Guardado local sin internet"));
+                    body: JSON.stringify({ Rubro: rubro, Cliente: cliente, Monto_Total: `$${montoTotal}`, Condicion: estado })
+                }).catch(() => console.log("Guardado local sin red"));
             }
 
             localStorage.setItem('tech_trabajos', JSON.stringify(trabajos));
             resetearFormulario();
-            switchTab('balance');
+            window.switchTab('balance');
         });
     }
 
@@ -115,6 +102,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (btnCancelar) btnCancelar.addEventListener('click', resetearFormulario);
+    
+    // Ejecutar renders iniciales por si arranca en otra pestaña
+    renderVisitas();
 });
 
 // MOSTRAR VISITAS AGENDADAS
@@ -141,31 +131,26 @@ function renderVisitas() {
                 <p>📅 <strong>Fecha:</strong> ${v.fecha.split('-').reverse().join('/')}</p>
             </div>
             <div>
-                <button class="btn-accion" onclick="completarVisita(${v.id})" title="Pasar a Trabajo Realizado">✅</button>
-                <button class="btn-accion" onclick="eliminarVisita(${v.id})" title="Eliminar de agenda">🗑️</button>
+                <button class="btn-accion" onclick="completarVisita(${v.id})">✅</button>
+                <button class="btn-accion" onclick="eliminarVisita(${v.id})">🗑️</button>
             </div>
         `;
         contenedor.appendChild(div);
     });
 }
 
-// PASAR VISITA A TRABAJO REALIZADO
-function completarVisita(id) {
+window.completarVisita = function(id) {
     const v = visitas.find(vis => vis.id === id);
     if (!v) return;
-    
     document.getElementById('trabajo-cliente').value = v.cliente;
-    document.getElementById('trabajo-descripcion').value = `Visita técnica por: ${v.falla}`;
-    
+    document.getElementById('trabajo-descripcion').value = `Visita por: ${v.falla}`;
     visitas = visitas.filter(vis => vis.id !== id);
     localStorage.setItem('tech_visitas', JSON.stringify(visitas));
-    
-    switchTab('trabajos');
-    alert("¡Cliente cargado en el formulario! Ingresá el importe y el estado del pago.");
+    window.switchTab('trabajos');
 }
 
-function eliminarVisita(id) {
-    if (confirm("¿Querés borrar esta visita programada de la agenda?")) {
+window.eliminarVisita = function(id) {
+    if (confirm("¿Borrar visita?")) {
         visitas = visitas.filter(v => v.id !== id);
         localStorage.setItem('tech_visitas', JSON.stringify(visitas));
         renderVisitas();
@@ -183,50 +168,67 @@ function renderBalance() {
     let deudasClientes = 0;
 
     if (trabajos.length === 0) {
-        lista.innerHTML = `<tr><td colspan="4" style="text-align:center;">No hay registros guardados.</td></tr>`;
+        lista.innerHTML = `<tr><td colspan="4" style="text-align:center;">No hay registros.</td></tr>`;
     } else {
         trabajos.forEach(t => {
             let textoMontoFila = `$${t.montoTotal.toFixed(2)}`;
-            
-            // Matemática inteligente para balances y deudas
-            if (t.estado === 'Gasto') {
-                gastosTotales += t.montoTotal;
-            } else if (t.estado === 'Cobrado') {
-                ingresosReales += t.montoTotal;
-            } else if (t.estado === 'Seña') {
+            if (t.estado === 'Gasto') { gastosTotales += t.montoTotal; }
+            else if (t.estado === 'Cobrado') { ingresosReales += t.montoTotal; }
+            else if (t.estado === 'Seña') {
                 ingresosReales += t.señaAbonada;
                 deudasClientes += (t.montoTotal - t.señaAbonada);
                 textoMontoFila = `Total: $${t.montoTotal} (Señó: $${t.señaAbonada})`;
-            } else if (t.estado === 'Pendiente') {
-                deudasClientes += t.montoTotal;
-            }
+            } else if (t.estado === 'Pendiente') { deudasClientes += t.montoTotal; }
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong>${t.cliente}</strong><br><small style="color:#7f8c8d">[${t.rubro}] ${t.descripcion}</small></td>
+                <td><strong>${t.cliente}</strong><br><small style="color:#7f8c8d">${t.descripcion}</small></td>
                 <td>${textoMontoFila}</td>
                 <td><span class="badge ${t.estado}">${t.estado}</span></td>
                 <td>
-                    ${(t.estado === 'Seña' || t.estado === 'Pendiente') ? `<button class="btn-accion" onclick="liquidarDeuda(${t.id})" title="Marcar como Totalmente Cobrado">💸</button>` : ''}
-                    <button class="btn-accion" onclick="cargarEditarTrabajo(${t.id})" title="Modificar">✏️</button>
-                    <button class="btn-accion" onclick="eliminarTrabajo(${t.id})" title="Borrar">🗑️</button>
+                    ${(t.estado === 'Seña' || t.estado === 'Pendiente') ? `<button class="btn-accion" onclick="liquidarDeuda(${t.id})">💸</button>` : ''}
+                    <button class="btn-accion" onclick="cargarEditarTrabajo(${t.id})">✏️</button>
+                    <button class="btn-accion" onclick="eliminarTrabajo(${t.id})">🗑️</button>
                 </td>
             `;
             lista.appendChild(tr);
         });
     }
 
-    // Dibujar totales en pantalla
     document.getElementById('total-ingresos').innerText = `$${ingresosReales.toFixed(2)}`;
     document.getElementById('total-gastos').innerText = `$${gastosTotales.toFixed(2)}`;
     document.getElementById('total-por-cobrar').innerText = `$${deudasClientes.toFixed(2)}`;
     document.getElementById('total-neto').innerText = `$${(ingresosReales - gastosTotales).toFixed(2)}`;
 }
 
-// BOTÓN DIRECTO PARA MARCAR COMO TOTALMENTE COBRADO (💸)
-function liquidarDeuda(id) {
+window.liquidarDeuda = function(id) {
+    const t = trabajos.find(trab => trab.id === id);
+    if (!t && confirm(`¿Saldar deuda de ${t.cliente}?`)) {
+        t.estado = 'Cobrado';
+        t.señaAbonada = 0;
+        localStorage.setItem('tech_trabajos', JSON.stringify(trabajos));
+        renderBalance();
+    }
+}
+
+window.cargarEditarTrabajo = function(id) {
     const t = trabajos.find(trab => trab.id === id);
     if (!t) return;
+    document.getElementById('trabajo-id').value = t.id;
+    document.getElementById('trabajo-cliente').value = t.cliente;
+    document.getElementById('trabajo-rubro').value = t.rubro;
+    document.getElementById('trabajo-monto').value = t.montoTotal;
+    document.getElementById('trabajo-estado').value = t.estado;
+    document.getElementById('trabajo-descripcion').value = t.descripcion;
+    window.switchTab('trabajos');
+}
 
-    if (confirm(`¿Confirmás que el cliente ${t.cliente} ya te pagó la totalidad del saldo pendiente?`)) {
-        t.estado = 'Cobrado';
+window.eliminarTrabajo = function(id) {
+    if (confirm("¿Borrar registro?")) {
+        trabajos = trabajos.filter(t => t.id !== id);
+        localStorage.setItem('tech_trabajos', JSON.stringify(trabajos));
+        renderBalance();
+    }
+}
+
+function resetearFormulario() {
