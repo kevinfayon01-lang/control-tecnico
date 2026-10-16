@@ -7,15 +7,19 @@ let visitas = JSON.parse(localStorage.getItem('tech_visitas')) || [];
 
 // FUNCIÓN PARA CAMBIAR PESTAÑAS
 window.switchTab = function(tabName, event) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    try {
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
-    const targetTab = document.getElementById(`tab-${tabName}`);
-    if (targetTab) targetTab.classList.add('active');
-    if (event && event.currentTarget) event.currentTarget.classList.add('active');
-    
-    if (tabName === 'balance') renderBalance();
-    if (tabName === 'agenda') renderVisitas();
+        const targetTab = document.getElementById(`tab-${tabName}`);
+        if (targetTab) targetTab.classList.add('active');
+        if (event && event.currentTarget) event.currentTarget.classList.add('active');
+        
+        if (tabName === 'balance') renderBalance();
+        if (tabName === 'agenda') renderVisitas();
+    } catch (error) {
+        alert("Error al cambiar de pestaña: " + error.message);
+    }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -38,50 +42,55 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // REGISTRO DE TRABAJOS Y GASTOS
+    // REGISTRO DE TRABAJOS Y GASTOS (CON DETECTOR DE ERRORES)
     if (finanzasForm) {
         finanzasForm.addEventListener('submit', (e) => {
             e.preventDefault();
-
-            const id = document.getElementById('trabajo-id').value;
-            const cliente = document.getElementById('trabajo-cliente').value;
-            const rubro = document.getElementById('trabajo-rubro').value;
-            const montoTotal = parseFloat(document.getElementById('trabajo-monto').value);
-            const estado = document.getElementById('trabajo-estado').value;
-            const desc = document.getElementById('trabajo-descripcion').value;
-            
-            let señaAbonada = 0;
-            if (estado === 'Seña') {
-                señaAbonada = parseFloat(document.getElementById('trabajo-monto-seña').value);
-            }
-
-            const datosTrabajo = {
-                id: id ? parseInt(id) : Date.now(),
-                cliente, rubro, montoTotal, estado, señaAbonada,
-                descripcion: desc,
-                fecha: new Date().toLocaleDateString('es-AR')
-            };
-
-            if (id) {
-                // Modo Edición
-                trabajos = trabajos.map(t => t.id === datosTrabajo.id ? datosTrabajo : t);
-                alert("¡Registro de trabajo actualizado! ✏️");
-            } else {
-                // Modo Nuevo Registro
-                trabajos.push(datosTrabajo);
-                alert("¡Guardado en caja correctamente! 💰");
+            try {
+                const id = document.getElementById('trabajo-id').value;
+                const cliente = document.getElementById('trabajo-cliente').value;
+                const rubro = document.getElementById('trabajo-rubro').value;
+                const montoInput = document.getElementById('trabajo-monto').value;
+                const estado = document.getElementById('trabajo-estado').value;
+                const desc = document.getElementById('trabajo-descripcion').value;
                 
-                // Respaldo por correo
-                fetch(FORMSPREE_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ Rubro: rubro, Cliente: cliente, Monto_Total: `$${montoTotal}`, Condicion: estado })
-                }).catch(() => console.log("Guardado local sin red"));
-            }
+                const montoTotal = parseFloat(montoInput) || 0;
+                
+                let señaAbonada = 0;
+                if (estado === 'Seña') {
+                    const señaInput = document.getElementById('trabajo-monto-seña').value;
+                    señaAbonada = parseFloat(señaInput) || 0;
+                }
 
-            localStorage.setItem('tech_trabajos', JSON.stringify(trabajos));
-            resetearFormulario();
-            window.switchTab('balance');
+                const datosTrabajo = {
+                    id: id ? parseInt(id) : Date.now(),
+                    cliente, rubro, montoTotal, estado, señaAbonada,
+                    descripcion: desc,
+                    fecha: new Date().toLocaleDateString('es-AR')
+                };
+
+                if (id) {
+                    trabajos = trabajos.map(t => t.id === datosTrabajo.id ? datosTrabajo : t);
+                    alert("¡Registro de trabajo actualizado! ✏️");
+                } else {
+                    trabajos.push(datosTrabajo);
+                    alert("¡Guardado en caja correctamente! 💰");
+                    
+                    // Respaldo opcional por correo
+                    fetch(FORMSPREE_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({ Rubro: rubro, Cliente: cliente, Monto_Total: `$${montoTotal}`, Condicion: estado })
+                    }).catch(() => console.log("Guardado local sin red"));
+                }
+
+                localStorage.setItem('tech_trabajos', JSON.stringify(trabajos));
+                resetearFormulario();
+                window.switchTab('balance');
+
+            } catch (error) {
+                alert("Error crítico al guardar el trabajo: " + error.message);
+            }
         });
     }
 
@@ -89,25 +98,30 @@ document.addEventListener("DOMContentLoaded", () => {
     if (agendaForm) {
         agendaForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const cliente = document.getElementById('visita-cliente').value;
-            const direccion = document.getElementById('visita-direccion').value;
-            const fecha = document.getElementById('visita-fecha').value;
-            const falla = document.getElementById('visita-falla').value;
+            try {
+                const cliente = document.getElementById('visita-cliente').value;
+                const direccion = document.getElementById('visita-direccion').value;
+                const fecha = document.getElementById('visita-fecha').value;
+                const falla = document.getElementById('visita-falla').value;
 
-            const nuevaVisita = { id: Date.now(), cliente, direccion, fecha, falla };
-            visitas.push(nuevaVisita);
-            localStorage.setItem('tech_visitas', JSON.stringify(visitas));
-            
-            agendaForm.reset();
-            alert("¡Visita agendada con éxito! 📅");
-            renderVisitas();
+                const nuevaVisita = { id: Date.now(), cliente, direccion, fecha, falla };
+                visitas.push(nuevaVisita);
+                localStorage.setItem('tech_visitas', JSON.stringify(visitas));
+                
+                agendaForm.reset();
+                alert("¡Visita agendada con éxito! 📅");
+                renderVisitas();
+            } catch (error) {
+                alert("Error en agenda: " + error.message);
+            }
         });
     }
 
     if (btnCancelar) btnCancelar.addEventListener('click', resetearFormulario);
     
-    // Render inicial de visitas
+    // Forzar renderizado inicial de datos guardados
     renderVisitas();
+    renderBalance();
 });
 
 // MOSTRAR VISITAS AGENDADAS
@@ -162,76 +176,54 @@ window.eliminarVisita = function(id) {
 
 // CALCULAR CONTADORES Y RENDERIZAR RECUADRO DE BALANCE
 function renderBalance() {
-    const lista = document.getElementById('lista-trabajos');
-    if (!lista) return;
-    lista.innerHTML = '';
+    try {
+        const lista = document.getElementById('lista-trabajos');
+        if (!lista) return;
+        lista.innerHTML = '';
 
-    let ingresosReales = 0;
-    let gastosTotales = 0;
-    let deudasClientes = 0;
+        let ingresosReales = 0;
+        let gastosTotales = 0;
+        let deudasClientes = 0;
 
-    if (trabajos.length === 0) {
-        lista.innerHTML = `<tr><td colspan="4" style="text-align:center;">No hay registros.</td></tr>`;
-    } else {
-        trabajos.forEach(t => {
-            let textoMontoFila = `$${t.montoTotal.toFixed(2)}`;
-            if (t.estado === 'Gasto') { gastosTotales += t.montoTotal; }
-            else if (t.estado === 'Cobrado') { ingresosReales += t.montoTotal; }
-            else if (t.estado === 'Seña') {
-                ingresosReales += t.señaAbonada;
-                deudasClientes += (t.montoTotal - t.señaAbonada);
-                textoMontoFila = `Total: $${t.montoTotal} (Señó: $${t.señaAbonada})`;
-            } else if (t.estado === 'Pendiente') { deudasClientes += t.montoTotal; }
+        if (trabajos.length === 0) {
+            lista.innerHTML = `<tr><td colspan="4" style="text-align:center;">No hay registros de trabajos o gastos.</td></tr>`;
+        } else {
+            trabajos.forEach(t => {
+                let totalMonto = t.montoTotal || 0;
+                let textoMontoFila = `$${totalMonto.toFixed(2)}`;
+                
+                if (t.estado === 'Gasto') { 
+                    gastosTotales += totalMonto; 
+                } else if (t.estado === 'Cobrado') { 
+                    ingresosReales += totalMonto; 
+                } else if (t.estado === 'Seña') {
+                    let seña = t.señaAbonada || 0;
+                    ingresosReales += seña;
+                    deudasClientes += (totalMonto - seña);
+                    textoMontoFila = `Total: $${totalMonto} (Señó: $${seña})`;
+                } else if (t.estado === 'Pendiente') { 
+                    deudasClientes += totalMonto; 
+                }
 
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${t.cliente}</strong><br><small style="color:#7f8c8d">${t.descripcion}</small></td>
-                <td>${textoMontoFila}</td>
-                <td><span class="badge ${t.estado}">${t.estado}</span></td>
-                <td>
-                    ${(t.estado === 'Seña' || t.estado === 'Pendiente') ? `<button class="btn-accion" onclick="liquidarDeuda(${t.id})">💸</button>` : ''}
-                    <button class="btn-accion" onclick="cargarEditarTrabajo(${t.id})">✏️</button>
-                    <button class="btn-accion" onclick="eliminarTrabajo(${t.id})">🗑️</button>
-                </td>
-            `;
-            lista.appendChild(tr);
-        });
-    }
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${t.cliente}</strong><br><small style="color:#7f8c8d">${t.descripcion || ''}</small></td>
+                    <td>${textoMontoFila}</td>
+                    <td><span class="badge ${t.estado}">${t.estado}</span></td>
+                    <td>
+                        ${(t.estado === 'Seña' || t.estado === 'Pendiente') ? `<button class="btn-accion" onclick="liquidarDeuda(${t.id})">💸</button>` : ''}
+                        <button class="btn-accion" onclick="cargarEditarTrabajo(${t.id})">✏️</button>
+                        <button class="btn-accion" onclick="eliminarTrabajo(${t.id})">🗑️</button>
+                    </td>
+                `;
+                lista.appendChild(tr);
+            });
+        }
 
-    document.getElementById('total-ingresos').innerText = `$${ingresosReales.toFixed(2)}`;
-    document.getElementById('total-gastos').innerText = `$${gastosTotales.toFixed(2)}`;
-    document.getElementById('total-por-cobrar').innerText = `$${deudasClientes.toFixed(2)}`;
-    document.getElementById('total-neto').innerText = `$${(ingresosReales - gastosTotales).toFixed(2)}`;
-}
+        const elIngresos = document.getElementById('total-ingresos');
+        const elGastos = document.getElementById('total-gastos');
+        const elCobrar = document.getElementById('total-por-cobrar');
+        const elNeto = document.getElementById('total-neto');
 
-window.liquidarDeuda = function(id) {
-    const t = trabajos.find(trab => trab.id === id);
-    if (t && confirm(`¿Saldar deuda de ${t.cliente}?`)) {
-        t.estado = 'Cobrado';
-        t.señaAbonada = 0;
-        localStorage.setItem('tech_trabajos', JSON.stringify(trabajos));
-        renderBalance();
-    }
-}
-
-window.cargarEditarTrabajo = function(id) {
-    const t = trabajos.find(trab => trab.id === id);
-    if (!t) return;
-    document.getElementById('trabajo-id').value = t.id;
-    document.getElementById('trabajo-cliente').value = t.cliente;
-    document.getElementById('trabajo-rubro').value = t.rubro;
-    document.getElementById('trabajo-monto').value = t.montoTotal;
-    document.getElementById('trabajo-estado').value = t.estado;
-    document.getElementById('trabajo-descripcion').value = t.descripcion;
-    window.switchTab('trabajos');
-}
-
-window.eliminarTrabajo = function(id) {
-    if (confirm("¿Borrar registro?")) {
-        trabajos = trabajos.filter(t => t.id !== id);
-        localStorage.setItem('tech_trabajos', JSON.stringify(trabajos));
-        renderBalance();
-    }
-}
-
-   
+        if(elIngresos) elIngresos.innerText = `$${ingresosReales.toFixed(2)}`;
+        if(elGastos) elGastos.innerText = `$${gastosTotales.toFixed(2)}`;
