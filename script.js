@@ -1,7 +1,7 @@
 // CONFIGURACIÓN DE TU FORMULARIO DE FORMSPREE
 const FORMSPREE_URL = "https://formspree.io";
 
-// Almacenamiento local para no perder datos al cerrar la pestaña
+// Almacenamiento local para no perder datos en el celular
 let trabajos = JSON.parse(localStorage.getItem('tech_trabajos')) || [];
 let visitas = JSON.parse(localStorage.getItem('tech_visitas')) || [];
 
@@ -21,8 +21,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const finanzasForm = document.getElementById('finanzas-form');
     const agendaForm = document.getElementById('agenda-form');
     const btnCancelar = document.getElementById('btn-cancelar');
+    const selectEstado = document.getElementById('trabajo-estado');
+    const contenedorSeñaInput = document.getElementById('contenedor-monto-seña');
 
-    // CONTROL DEL FORMULARIO DE TRABAJOS Y MODIFICACIONES
+    // Mostrar/ocultar casillero de seña dinámicamente según la opción elegida
+    if (selectEstado && contenedorSeñaInput) {
+        selectEstado.addEventListener('change', (e) => {
+            if (e.target.value === 'Seña') {
+                contenedorSeñaInput.style.display = 'block';
+                document.getElementById('trabajo-monto-seña').setAttribute('required', 'true');
+            } else {
+                contenedorSeñaInput.style.display = 'none';
+                document.getElementById('trabajo-monto-seña').removeAttribute('required');
+            }
+        });
+    }
+
+    // REGISTRO DE TRABAJOS Y GASTOS
     if (finanzasForm) {
         finanzasForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -30,31 +45,48 @@ document.addEventListener("DOMContentLoaded", () => {
             const id = document.getElementById('trabajo-id').value;
             const cliente = document.getElementById('trabajo-cliente').value;
             const rubro = document.getElementById('trabajo-rubro').value;
-            const monto = parseFloat(document.getElementById('trabajo-monto').value);
+            const montoTotal = parseFloat(document.getElementById('trabajo-monto').value);
             const estado = document.getElementById('trabajo-estado').value;
             const desc = document.getElementById('trabajo-descripcion').value;
+            
+            let señaAbonada = 0;
+            if (estado === 'Seña') {
+                señaAbonada = parseFloat(document.getElementById('trabajo-monto-seña').value);
+            }
 
             const datosTrabajo = {
                 id: id ? parseInt(id) : Date.now(),
-                cliente, rubro, monto, estado, descripcion: desc,
+                cliente, 
+                rubro, 
+                montoTotal, 
+                estado, 
+                señaAbonada,
+                descripcion: desc,
                 fecha: new Date().toLocaleDateString('es-AR')
             };
 
             if (id) {
-                // Modo Edición: Actualiza el existente
+                // Modo Edición
                 trabajos = trabajos.map(t => t.id === datosTrabajo.id ? datosTrabajo : t);
                 alert("¡Registro de trabajo actualizado! ✏️");
             } else {
                 // Modo Nuevo Registro
                 trabajos.push(datosTrabajo);
-                alert("¡Trabajo registrado en caja con éxito! 💰");
+                alert("¡Guardado en caja correctamente! 💰");
                 
-                // Copia de respaldo por mail automática a Formspree
+                // Respaldo por correo a tu Formspree
                 fetch(FORMSPREE_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ Rubro: rubro, Cliente: cliente, Monto: `$${monto}`, Detalle: desc, Condicion: estado })
-                }).catch(() => console.log("Guardado local sin conexión"));
+                    body: JSON.stringify({ 
+                        Rubro: rubro, 
+                        Cliente: cliente, 
+                        Monto_Total: `$${montoTotal}`, 
+                        Seña_Cobrada: estado === 'Seña' ? `$${señaAbonada}` : 'No aplica',
+                        Estado: estado,
+                        Detalle: desc 
+                    })
+                }).catch(() => console.log("Guardado local sin internet"));
             }
 
             localStorage.setItem('tech_trabajos', JSON.stringify(trabajos));
@@ -63,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // CONTROL DEL FORMULARIO DE VISITAS TÉCNICAS
+    // REGISTRO DE VISITAS TÉCNICAS (AGENDA)
     if (agendaForm) {
         agendaForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -77,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem('tech_visitas', JSON.stringify(visitas));
             
             agendaForm.reset();
-            alert("¡Visita agendada correctamente! 📅");
+            alert("¡Visita agendada con éxito! 📅");
             renderVisitas();
         });
     }
@@ -85,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnCancelar) btnCancelar.addEventListener('click', resetearFormulario);
 });
 
-// MOSTRAR VISITAS AGENDADAS EN PANTALLA
+// MOSTRAR VISITAS AGENDADAS
 function renderVisitas() {
     const contenedor = document.getElementById('lista-visitas');
     if (!contenedor) return;
@@ -96,7 +128,6 @@ function renderVisitas() {
         return;
     }
 
-    // Ordenar visitas para mostrar primero las fechas más viejas/próximas
     visitas.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
 
     visitas.forEach(v => {
@@ -107,7 +138,7 @@ function renderVisitas() {
                 <h4>${v.cliente}</h4>
                 <p>📍 <strong>Dirección:</strong> ${v.direccion}</p>
                 <p>🔧 <strong>Falla:</strong> ${v.falla}</p>
-                <p>📅 <strong>Pautado para:</strong> ${v.fecha.split('-').reverse().join('/')}</p>
+                <p>📅 <strong>Fecha:</strong> ${v.fecha.split('-').reverse().join('/')}</p>
             </div>
             <div>
                 <button class="btn-accion" onclick="completarVisita(${v.id})" title="Pasar a Trabajo Realizado">✅</button>
@@ -118,57 +149,65 @@ function renderVisitas() {
     });
 }
 
-// 🟢 ESTA FUNCIÓN PASA LA VISITA AL REGISTRO Y PREGUNTA CÓMO SE RESOLVIÓ COBRO
+// PASAR VISITA A TRABAJO REALIZADO
 function completarVisita(id) {
     const v = visitas.find(vis => vis.id === id);
     if (!v) return;
     
-    // Autocompleta el formulario de trabajos para ahorrarte escribir en la calle
     document.getElementById('trabajo-cliente').value = v.cliente;
-    document.getElementById('trabajo-descripcion').value = `Visita por: ${v.falla}`;
+    document.getElementById('trabajo-descripcion').value = `Visita técnica por: ${v.falla}`;
     
-    // Remueve la visita de la agenda por completada
     visitas = visitas.filter(vis => vis.id !== id);
     localStorage.setItem('tech_visitas', JSON.stringify(visitas));
     
     switchTab('trabajos');
-    alert("¡Datos del cliente cargados! Ingresá el precio final y el estado del pago para registrar el cobro.");
+    alert("¡Cliente cargado en el formulario! Ingresá el importe y el estado del pago.");
 }
 
 function eliminarVisita(id) {
-    if (confirm("¿Querés cancelar o eliminar esta visita programada?")) {
+    if (confirm("¿Querés borrar esta visita programada de la agenda?")) {
         visitas = visitas.filter(v => v.id !== id);
         localStorage.setItem('tech_visitas', JSON.stringify(visitas));
         renderVisitas();
     }
 }
 
-// CALCULAR CONTADORES Y RENDERIZAR HISTORIAL COMPLETO
+// CALCULAR CONTADORES Y RENDERIZAR RECUADRO DE BALANCE
 function renderBalance() {
     const lista = document.getElementById('lista-trabajos');
     if (!lista) return;
     lista.innerHTML = '';
 
-    let ingresos = 0;
-    let gastos = 0;
+    let ingresosReales = 0;
+    let gastosTotales = 0;
+    let deudasClientes = 0;
 
     if (trabajos.length === 0) {
-        lista.innerHTML = `<tr><td colspan="4" style="text-align:center;">No hay registros de trabajos o gastos guardados.</td></tr>`;
+        lista.innerHTML = `<tr><td colspan="4" style="text-align:center;">No hay registros guardados.</td></tr>`;
     } else {
         trabajos.forEach(t => {
-            // Clasificación del dinero para el balance
+            let textoMontoFila = `$${t.montoTotal.toFixed(2)}`;
+            
+            // Matemática inteligente para balances y deudas
             if (t.estado === 'Gasto') {
-                gastos += t.monto;
-            } else {
-                ingresos += t.monto; // Suma totales cobrados y adelantos/señas
+                gastosTotales += t.montoTotal;
+            } else if (t.estado === 'Cobrado') {
+                ingresosReales += t.montoTotal;
+            } else if (t.estado === 'Seña') {
+                ingresosReales += t.señaAbonada;
+                deudasClientes += (t.montoTotal - t.señaAbonada);
+                textoMontoFila = `Total: $${t.montoTotal} (Señó: $${t.señaAbonada})`;
+            } else if (t.estado === 'Pendiente') {
+                deudasClientes += t.montoTotal;
             }
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${t.cliente}</strong><br><small style="color:#7f8c8d">[${t.rubro}] ${t.descripcion}</small></td>
-                <td>$${t.monto.toFixed(2)}</td>
+                <td>${textoMontoFila}</td>
                 <td><span class="badge ${t.estado}">${t.estado}</span></td>
                 <td>
+                    ${(t.estado === 'Seña' || t.estado === 'Pendiente') ? `<button class="btn-accion" onclick="liquidarDeuda(${t.id})" title="Marcar como Totalmente Cobrado">💸</button>` : ''}
                     <button class="btn-accion" onclick="cargarEditarTrabajo(${t.id})" title="Modificar">✏️</button>
                     <button class="btn-accion" onclick="eliminarTrabajo(${t.id})" title="Borrar">🗑️</button>
                 </td>
@@ -177,42 +216,17 @@ function renderBalance() {
         });
     }
 
-    // Actualiza los balances en las tarjetas
-    document.getElementById('total-ingresos').innerText = `$${ingresos.toFixed(2)}`;
-    document.getElementById('total-gastos').innerText = `$${gastos.toFixed(2)}`;
-    document.getElementById('total-neto').innerText = `$${(ingresos - gastos).toFixed(2)}`;
+    // Dibujar totales en pantalla
+    document.getElementById('total-ingresos').innerText = `$${ingresosReales.toFixed(2)}`;
+    document.getElementById('total-gastos').innerText = `$${gastosTotales.toFixed(2)}`;
+    document.getElementById('total-por-cobrar').innerText = `$${deudasClientes.toFixed(2)}`;
+    document.getElementById('total-neto').innerText = `$${(ingresosReales - gastosTotales).toFixed(2)}`;
 }
 
-// MODIFICAR TRABAJOS MANUALMENTE DEL HISTORIAL
-function cargarEditarTrabajo(id) {
+// BOTÓN DIRECTO PARA MARCAR COMO TOTALMENTE COBRADO (💸)
+function liquidarDeuda(id) {
     const t = trabajos.find(trab => trab.id === id);
     if (!t) return;
 
-    document.getElementById('trabajo-id').value = t.id;
-    document.getElementById('trabajo-cliente').value = t.cliente;
-    document.getElementById('trabajo-rubro').value = t.rubro;
-    document.getElementById('trabajo-monto').value = t.monto;
-    document.getElementById('trabajo-estado').value = t.estado;
-    document.getElementById('trabajo-descripcion').value = t.descripcion;
-
-    document.getElementById('form-titulo').innerText = "Modificar Registro de Trabajo ✏️";
-    document.getElementById('btn-submit').innerText = "Guardar Cambios";
-    document.getElementById('btn-cancelar').style.display = "block";
-    switchTab('trabajos');
-}
-
-function eliminarTrabajo(id) {
-    if (confirm("¿Estás seguro de que querés borrar este registro del balance?")) {
-        trabajos = trabajos.filter(t => t.id !== id);
-        localStorage.setItem('tech_trabajos', JSON.stringify(trabajos));
-        renderBalance();
-    }
-}
-
-function resetearFormulario() {
-    document.getElementById('finanzas-form').reset();
-    document.getElementById('trabajo-id').value = '';
-    document.getElementById('form-titulo').innerText = "Registrar Trabajo Realizado";
-    document.getElementById('btn-submit').innerText = "Guardar Registro";
-    document.getElementById('btn-cancelar').style.display = "none";
-}
+    if (confirm(`¿Confirmás que el cliente ${t.cliente} ya te pagó la totalidad del saldo pendiente?`)) {
+        t.estado = 'Cobrado';
