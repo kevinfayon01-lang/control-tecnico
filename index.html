@@ -7,10 +7,136 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Estructura principal de la aplicación -->
+
     <div class="container">
-        <!-- Contenido de las pestañas de Trabajos, Agenda y Balance -->
+        <!-- Navegación del Taller -->
+        <nav class="tab-navigation">
+            <button class="tab-btn active" onclick="switchTab('trabajos', event)">⚡ Trabajos</button>
+            <button class="tab-btn" onclick="switchTab('agenda', event)">📅 Agenda</button>
+            <button class="tab-btn" onclick="switchTab('balance', event)">📊 Balance</button>
+        </nav>
+
+        <!-- PESTAÑA 1: REGISTRO DE TRABAJOS Y REPARACIONES -->
+        <section id="tab-trabajos" class="tab-content active">
+            <h2 id="form-titulo">Registrar Trabajo Realizado</h2>
+            <form id="finanzas-form">
+                <input type="hidden" id="trabajo-id">
+
+                <div class="form-group">
+                    <label for="trabajo-cliente">Nombre del Cliente:</label>
+                    <input type="text" id="trabajo-cliente" placeholder="Ej: Carlos Gómez" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="trabajo-rubro">Rubro / Servicio:</label>
+                        <select id="trabajo-rubro" required>
+                            <option value="Electricidad">⚡ Electricidad</option>
+                            <option value="Refrigeración">❄️ Aire Acondicionado</option>
+                            <option value="Materiales">🛠️ Compra de Materiales</option>
+                        </select>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="trabajo-monto">Monto Total ($):</label>
+                        <input type="number" id="trabajo-monto" min="0" placeholder="0" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="trabajo-estado">Estado del Trabajo / Pago:</label>
+                    <select id="trabajo-estado" required>
+                        <option value="Cobrado">✅ Cobrado Total</option>
+                        <option value="Seña">⏳ Seña / Adelanto</option>
+                        <option value="Pendiente">❌ Pendiente de Pago</option>
+                        <option value="Gasto">📉 Gasto (Materiales / Repuestos)</option>
+                    </select>
+                </div>
+
+                <!-- Casillero inteligente para la Seña -->
+                <div class="form-group" id="contenedor-monto-seña" style="display: none;">
+                    <label for="trabajo-monto-seña">¿Cuánto te dejó de Seña? ($):</label>
+                    <input type="number" id="trabajo-monto-seña" min="0" placeholder="Ej: 20000">
+                </div>
+
+                <div class="form-group">
+                    <label for="trabajo-descripcion">Detalle de la Tarea:</label>
+                    <input type="text" id="trabajo-descripcion" placeholder="Ej: Cambio de térmica / Carga de gas R410" required>
+                </div>
+
+                <button type="submit" id="btn-submit" class="btn-submit">Guardar Registro</button>
+                <button type="button" id="btn-cancelar" class="btn-cancel" style="display: none;">Cancelar Modificación</button>
+            </form>
+        </section>
+
+        <!-- PESTAÑA 2: AGENDA DE VISITAS TÉCNICAS -->
+        <section id="tab-agenda" class="tab-content">
+            <h2>Agendar Nueva Visita</h2>
+            <form id="agenda-form" style="margin-bottom: 20px;">
+                <div class="form-group">
+                    <label for="visita-cliente">Cliente / Teléfono:</label>
+                    <input type="text" id="visita-cliente" placeholder="Ej: Juan Pérez - 11234567" required>
+                </div>
+                <div class="form-group">
+                    <label for="visita-direccion">Dirección / Barrio:</label>
+                    <input type="text" id="visita-direccion" placeholder="Ej: Av. Belgrano 1234, Planta Alta" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="visita-fecha">Fecha:</label>
+                        <input type="date" id="visita-fecha" required>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="visita-falla">Falla / Reporte Técnico:</label>
+                        <input type="text" id="visita-falla" placeholder="Ej: Cortocircuito / No enfría" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit" style="background-color: #3498db;">Agendar Visita</button>
+            </form>
+
+            <h3>Visitas Pendientes en Agenda</h3>
+            <div class="lista-contenedor" id="lista-visitas"></div>
+        </section>
+
+        <!-- PESTAÑA 3: BALANCE Y CAJA -->
+        <section id="tab-balance" class="tab-content">
+            <h2>Estado de Cuentas</h2>
+            
+            <div class="balance-cards">
+                <div class="card card-ingresos">
+                    <h3>Ingresos</h3>
+                    <p id="total-ingresos">$0.00</p>
+                </div>
+                <div class="card card-gastos">
+                    <h3>Gastos</h3>
+                    <p id="total-gastos">$0.00</p>
+                </div>
+                <div class="card card-por-cobrar">
+                    <h3>Por Cobrar</h3>
+                    <p id="total-por-cobrar">$0.00</p>
+                </div>
+                <div class="card card-neto">
+                    <h3>Balance Neto</h3>
+                    <p id="total-neto">$0.00</p>
+                </div>
+            </div>
+
+            <h3>Historial de Trabajos</h3>
+            <div class="tabla-contenedor">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Cliente / Detalle</th>
+                            <th>Monto</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-trabajos"></tbody>
+                </table>
+            </div>
+        </section>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
