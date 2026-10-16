@@ -5,7 +5,7 @@ const FORMSPREE_URL = "https://formspree.io";
 let trabajos = JSON.parse(localStorage.getItem('tech_trabajos')) || [];
 let visitas = JSON.parse(localStorage.getItem('tech_visitas')) || [];
 
-// FUNCIÓN PARA CAMBIAR PESTAÑAS (Asegurada de forma global)
+// FUNCIÓN PARA CAMBIAR PESTAÑAS
 window.switchTab = function(tabName, event) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -63,12 +63,15 @@ document.addEventListener("DOMContentLoaded", () => {
             };
 
             if (id) {
+                // Modo Edición
                 trabajos = trabajos.map(t => t.id === datosTrabajo.id ? datosTrabajo : t);
                 alert("¡Registro de trabajo actualizado! ✏️");
             } else {
+                // Modo Nuevo Registro
                 trabajos.push(datosTrabajo);
                 alert("¡Guardado en caja correctamente! 💰");
                 
+                // Respaldo por correo
                 fetch(FORMSPREE_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -103,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (btnCancelar) btnCancelar.addEventListener('click', resetearFormulario);
     
-    // Ejecutar renders iniciales por si arranca en otra pestaña
+    // Render inicial de visitas
     renderVisitas();
 });
 
@@ -203,7 +206,7 @@ function renderBalance() {
 
 window.liquidarDeuda = function(id) {
     const t = trabajos.find(trab => trab.id === id);
-    if (!t && confirm(`¿Saldar deuda de ${t.cliente}?`)) {
+    if (t && confirm(`¿Saldar deuda de ${t.cliente}?`)) {
         t.estado = 'Cobrado';
         t.señaAbonada = 0;
         localStorage.setItem('tech_trabajos', JSON.stringify(trabajos));
@@ -231,4 +234,4 @@ window.eliminarTrabajo = function(id) {
     }
 }
 
-function resetearFormulario() {
+   
