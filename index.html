@@ -220,9 +220,9 @@
     <div class="container">
         <!-- Navegación del Taller -->
         <nav class="tab-navigation">
-            <button class="tab-btn active" onclick="switchTab('trabajos', event)">⚡ Trabajos</button>
-            <button class="tab-btn" onclick="switchTab('agenda', event)">📅 Agenda</button>
-            <button class="tab-btn" onclick="switchTab('balance', event)">📊 Balance</button>
+            <button class="tab-btn active" id="btn-nav-trabajos" onclick="switchTab('trabajos')">⚡ Trabajos</button>
+            <button class="tab-btn" id="btn-nav-agenda" onclick="switchTab('agenda')">📅 Agenda</button>
+            <button class="tab-btn" id="btn-nav-balance" onclick="switchTab('balance')">📊 Balance</button>
         </nav>
 
         <!-- PESTAÑA 1: REGISTRO DE TRABAJOS -->
@@ -290,4 +290,4 @@
                     <input type="text" id="visita-direccion" placeholder="Ej: Av. Belgrano 1234" required>
                 </div>
                 <div class="form-row">
-                    <div class="form-group flex-1">
+
