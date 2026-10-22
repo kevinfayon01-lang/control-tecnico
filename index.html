@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -226,7 +225,7 @@
             <button class="tab-btn" onclick="switchTab('balance', event)">📊 Balance</button>
         </nav>
 
-        <!-- PESTAÑA 1: REGISTRO DE TRABAJOS Y REPARACIONES -->
+        <!-- PESTAÑA 1: REGISTRO DE TRABAJOS -->
         <section id="tab-trabajos" class="tab-content active">
             <h2 id="form-titulo">Registrar Trabajo Realizado</h2>
             <form id="finanzas-form">
@@ -255,10 +254,10 @@
                 <div class="form-group">
                     <label for="trabajo-estado">Estado del Trabajo / Pago:</label>
                     <select id="trabajo-estado" required>
-                        <option value="Cobrado">✅ Cobrado Total</option>
-                        <option value="Seña">⏳ Seña / Adelanto</option>
-                        <option value="Pendiente">❌ Pendiente de Pago</option>
-                        <option value="Gasto">📉 Gasto (Materiales / Repuestos)</option>
+                        <option value="Cobrado">✅ Cobrado</option>
+                        <option value="Seña">⏳ Seña</option>
+                        <option value="Pendiente">❌ Pendiente</option>
+                        <option value="Gasto">📉 Gasto</option>
                     </select>
                 </div>
 
@@ -291,4 +290,4 @@
                     <input type="text" id="visita-direccion" placeholder="Ej: Av. Belgrano 1234" required>
                 </div>
                 <div class="form-row">
-
+                    <div class="form-group flex-1">
