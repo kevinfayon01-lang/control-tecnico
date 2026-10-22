@@ -1,6 +1,3 @@
-// CONFIGURACIÓN DE TU FORMULARIO DE FORMSPREE
-const FORMSPREE_URL = "https://formspree.io";
-
 // Almacenamiento local para no perder datos en el celular
 let trabajos = JSON.parse(localStorage.getItem('tech_trabajos')) || [];
 let visitas = JSON.parse(localStorage.getItem('tech_visitas')) || [];
@@ -13,7 +10,17 @@ window.switchTab = function(tabName, event) {
 
         const targetTab = document.getElementById(`tab-${tabName}`);
         if (targetTab) targetTab.classList.add('active');
-        if (event && event.currentTarget) event.currentTarget.classList.add('active');
+        
+        if (event && event.currentTarget) {
+            event.currentTarget.classList.add('active');
+        } else {
+            const botones = document.querySelectorAll('.tab-btn');
+            botones.forEach(btn => {
+                if (btn.innerText.toLowerCase().includes(tabName)) {
+                    btn.classList.add('active');
+                }
+            });
+        }
         
         if (tabName === 'balance') renderBalance();
         if (tabName === 'agenda') renderVisitas();
@@ -29,7 +36,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const selectEstado = document.getElementById('trabajo-estado');
     const contenedorSeñaInput = document.getElementById('contenedor-monto-seña');
 
-    // Mostrar/ocultar casillero de seña dinámicamente según la opción elegida
     if (selectEstado && contenedorSeñaInput) {
         selectEstado.addEventListener('change', (e) => {
             if (e.target.value === 'Seña') {
@@ -38,11 +44,11 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 contenedorSeñaInput.style.display = 'none';
                 document.getElementById('trabajo-monto-seña').removeAttribute('required');
+                document.getElementById('trabajo-monto-seña').value = '';
             }
         });
     }
 
-    // REGISTRO DE TRABAJOS Y GASTOS (CON DETECTOR DE ERRORES)
     if (finanzasForm) {
         finanzasForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -75,13 +81,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else {
                     trabajos.push(datosTrabajo);
                     alert("¡Guardado en caja correctamente! 💰");
-                    
-                    // Respaldo opcional por correo
-                    fetch(FORMSPREE_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                        body: JSON.stringify({ Rubro: rubro, Cliente: cliente, Monto_Total: `$${montoTotal}`, Condicion: estado })
-                    }).catch(() => console.log("Guardado local sin red"));
                 }
 
                 localStorage.setItem('tech_trabajos', JSON.stringify(trabajos));
@@ -94,7 +93,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // REGISTRO DE VISITAS TÉCNICAS (AGENDA)
     if (agendaForm) {
         agendaForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -119,12 +117,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (btnCancelar) btnCancelar.addEventListener('click', resetearFormulario);
     
-    // Forzar renderizado inicial de datos guardados
     renderVisitas();
     renderBalance();
 });
 
-// MOSTRAR VISITAS AGENDADAS
 function renderVisitas() {
     const contenedor = document.getElementById('lista-visitas');
     if (!contenedor) return;
@@ -142,14 +138,14 @@ function renderVisitas() {
         div.className = 'visita-item';
         div.innerHTML = `
             <div class="visita-info">
-                <h4>${v.cliente}</h4>
+                <h4>👤 ${v.cliente}</h4>
                 <p>📍 <strong>Dirección:</strong> ${v.direccion}</p>
                 <p>🔧 <strong>Falla:</strong> ${v.falla}</p>
                 <p>📅 <strong>Fecha:</strong> ${v.fecha.split('-').reverse().join('/')}</p>
             </div>
-            <div>
-                <button class="btn-accion" onclick="completarVisita(${v.id})">✅</button>
-                <button class="btn-accion" onclick="eliminarVisita(${v.id})">🗑️</button>
+            <div class="visita-acciones">
+                <button class="btn-tabla-accion btn-check" onclick="completarVisita(${v.id})">✅</button>
+                <button class="btn-tabla-accion btn-trash" onclick="eliminarVisita(${v.id})">🗑️</button>
             </div>
         `;
         contenedor.appendChild(div);
@@ -167,14 +163,13 @@ window.completarVisita = function(id) {
 }
 
 window.eliminarVisita = function(id) {
-    if (confirm("¿Borrar visita?")) {
+    if (confirm("¿Borrar visita de la agenda?")) {
         visitas = visitas.filter(v => v.id !== id);
         localStorage.setItem('tech_visitas', JSON.stringify(visitas));
         renderVisitas();
     }
 }
 
-// CALCULAR CONTADORES Y RENDERIZAR RECUADRO DE BALANCE
 function renderBalance() {
     try {
         const lista = document.getElementById('lista-trabajos');
@@ -186,44 +181,53 @@ function renderBalance() {
         let deudasClientes = 0;
 
         if (trabajos.length === 0) {
-            lista.innerHTML = `<tr><td colspan="4" style="text-align:center;">No hay registros de trabajos o gastos.</td></tr>`;
+            lista.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 15px; color: #7f8c8d;">No hay registros de trabajos o gastos.</td></tr>`;
         } else {
-            trabajos.forEach(t => {
+            const trabajosOrdenados = [...trabajos].reverse();
+
+            trabajosOrdenados.forEach(t => {
                 let totalMonto = t.montoTotal || 0;
-                let textoMontoFila = `$${totalMonto.toFixed(2)}`;
+                let textoMontoFila = `$${totalMonto.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+                let claseEstado = '';
+                let textoEstado = t.estado;
                 
                 if (t.estado === 'Gasto') { 
-                    gastosTotales += totalMonto; 
-                } else if (t.estado === 'Cobrado') { 
-                    ingresosReales += totalMonto; 
+                    gastosTotales += totalMonto;
+                    claseEstado = 'gasto';
+                } else if (t.estado === 'Cobrado') {
+                    ingresosReales += totalMonto;
+                    claseEstado = 'cobrado';
+                    textoEstado = '✓ Cobrado';
+                } else if (t.estado === 'Pendiente') {
+                    deudasClientes += totalMonto;
+                    claseEstado = 'pendiente';
+                    textoEstado = '⏳ Pendiente';
                 } else if (t.estado === 'Seña') {
                     let seña = t.señaAbonada || 0;
+                    let resto = totalMonto - seña;
                     ingresosReales += seña;
-                    deudasClientes += (totalMonto - seña);
-                    textoMontoFila = `Total: $${totalMonto} (Señó: $${seña})`;
-                } else if (t.estado === 'Pendiente') { 
-                    deudasClientes += totalMonto; 
+                    deudasClientes += resto;
+                    textoMontoFila = `$${seña.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+                    claseEstado = 'sena';
+                    textoEstado = '⏳ Señado';
                 }
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td><strong>${t.cliente}</strong><br><small style="color:#7f8c8d">${t.descripcion || ''}</small></td>
-                    <td>${textoMontoFila}</td>
-                    <td><span class="badge ${t.estado}">${t.estado}</span></td>
                     <td>
-                        ${(t.estado === 'Seña' || t.estado === 'Pendiente') ? `<button class="btn-accion" onclick="liquidarDeuda(${t.id})">💸</button>` : ''}
-                        <button class="btn-accion" onclick="cargarEditarTrabajo(${t.id})">✏️</button>
-                        <button class="btn-accion" onclick="eliminarTrabajo(${t.id})">🗑️</button>
+                        <strong>${t.cliente}</strong><br>
+                        <small style="color:#7f8c8d; font-size: 11px;">${t.rubro}</small>
+                    </td>
+                    <td><strong>${textoMontoFila}</strong></td>
+                    <td><span class="status-badge ${claseEstado}">${textoEstado}</span></td>
+                    <td>
+                        <button class="btn-tabla-accion btn-edit" onclick="editarTrabajo(${t.id})">✏️</button>
+                        <button class="btn-tabla-accion btn-trash" onclick="eliminarTrabajo(${t.id})">🗑️</button>
                     </td>
                 `;
                 lista.appendChild(tr);
             });
         }
 
-        const elIngresos = document.getElementById('total-ingresos');
-        const elGastos = document.getElementById('total-gastos');
-        const elCobrar = document.getElementById('total-por-cobrar');
-        const elNeto = document.getElementById('total-neto');
-
-        if(elIngresos) elIngresos.innerText = `$${ingresosReales.toFixed(2)}`;
-        if(elGastos) elGastos.innerText = `$${gastosTotales.toFixed(2)}`;
+        document.getElementById('total-ingresos').innerText = `$${ingresosReales.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+        document.getElementById('total-gastos').innerText = `$${gastosTotales.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
