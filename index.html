@@ -4,7 +4,217 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control Técnico - Electricidad & Split</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* TODOS LOS ESTILOS INTEGRADOS AQUÍ PARA EVITAR ERRORES DE ENLACE */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #d5dbdb;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px 10px;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: #ffffff;
+            max-width: 500px;
+            width: 100%;
+            border-radius: 14px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+            padding: 20px;
+        }
+
+        .tab-navigation {
+            display: flex;
+            gap: 5px;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 15px;
+            background-color: #1a365d;
+            padding: 6px;
+            border-radius: 8px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 10px 2px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #cbd5e1;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            color: #ffffff;
+            background-color: #2b6cb0;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        h2 {
+            color: #1a365d;
+            font-size: 18px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2b6cb0;
+            padding-left: 8px;
+        }
+
+        h3 {
+            color: #2d3748;
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        #finanzas-form, #agenda-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .form-group {
+            width: 100%;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .flex-1 { flex: 1; }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #4a5568;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            background-color: #f8fafc;
+        }
+
+        select:focus, input:focus {
+            border-color: #2b6cb0;
+            background-color: #ffffff;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background-color: #22c55e;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .btn-cancel {
+            width: 100%;
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .balance-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            padding: 12px 8px;
+            border-radius: 6px;
+            text-align: left;
+            padding-left: 12px;
+        }
+
+        .card h3 { font-size: 13px; margin: 0; color: #ffffff; opacity: 0.9; font-weight: normal; }
+        .card p { font-size: 18px; font-weight: bold; margin-top: 3px; color: #ffffff; }
+
+        .card-ingresos { background-color: #15803d; }
+        .card-gastos { background-color: #b91c1c; }
+        .card-por-cobrar { background-color: #d97706; }
+        .card-neto { background-color: #ea580c; }
+
+        .tabla-contenedor { overflow-x: auto; margin-top: 5px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        table { width: 100%; border-collapse: collapse; min-width: 400px; }
+        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+        th { background-color: #f1f5f9; color: #475569; font-weight: bold; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+        }
+        .status-badge.cobrado { background-color: #22c55e; }
+        .status-badge.sena { background-color: #3b82f6; }
+        .status-badge.pendiente { background-color: #f97316; }
+        .status-badge.gasto { background-color: #ef4444; }
+
+        .btn-tabla-accion {
+            border: none;
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-right: 2px;
+            color: white;
+        }
+        .btn-edit { background-color: #4b5563; }
+        .btn-trash { background-color: #ef4444; }
+        .btn-check { background-color: #22c55e; }
+
+        .visita-item {
+            background: #f8fafc;
+            border-left: 4px solid #3b82f6;
+            padding: 12px;
+            border-radius: 0 6px 6px 0;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .visita-info h4 { color: #1a202c; font-size: 14px; margin-bottom: 2px; }
+        .visita-info p { color: #4a5568; font-size: 12px; margin-top: 2px; }
+    </style>
 </head>
 <body>
 
@@ -27,31 +237,30 @@
                     <input type="text" id="trabajo-cliente" placeholder="Ej: Carlos Gómez" required>
                 </div>
 
-            <div class="form-group flex-1">
-    <label for="trabajo-rubro">Rubro / Servicio:</label>
-    <select id="trabajo-rubro" required>
-        <option value="Electricidad">⚡ Electricidad</option>
-        <option value="Aire Acondicionado">❄️ Aire Acondicionado</option>
-        <option value="Compra de Materiales">🛠️ Compra de Materiales</option>
-    </select>
-</div>
-
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="trabajo-rubro">Rubro / Servicio:</label>
+                        <select id="trabajo-rubro" required>
+                            <option value="Electricidad">⚡ Electricidad</option>
+                            <option value="Aire Acondicionado">❄️ Aire Acondicionado</option>
+                            <option value="Compra de Materiales">🛠️ Compra de Materiales</option>
+                        </select>
+                    </div>
                     <div class="form-group flex-1">
                         <label for="trabajo-monto">Monto Total ($):</label>
                         <input type="number" id="trabajo-monto" min="0" placeholder="0" required>
                     </div>
                 </div>
 
-               <div class="form-group">
-    <label for="trabajo-estado">Estado del Trabajo / Pago:</label>
-    <select id="trabajo-estado" required>
-        <option value="Cobrado">✅ Cobrado Total</option>
-        <option value="Seña">⏳ Seña / Adelanto</option>
-        <option value="Pendiente">❌ Pendiente de Pago</option>
-        <option value="Gasto">📉 Gasto (Materiales / Repuestos)</option>
-    </select>
-</div>
-
+                <div class="form-group">
+                    <label for="trabajo-estado">Estado del Trabajo / Pago:</label>
+                    <select id="trabajo-estado" required>
+                        <option value="Cobrado">✅ Cobrado Total</option>
+                        <option value="Seña">⏳ Seña / Adelanto</option>
+                        <option value="Pendiente">❌ Pendiente de Pago</option>
+                        <option value="Gasto">📉 Gasto (Materiales / Repuestos)</option>
+                    </select>
+                </div>
 
                 <!-- Casillero inteligente para la Seña -->
                 <div class="form-group" id="contenedor-monto-seña" style="display: none;">
@@ -79,65 +288,4 @@
                 </div>
                 <div class="form-group">
                     <label for="visita-direccion">Dirección / Barrio:</label>
-                    <input type="text" id="visita-direccion" placeholder="Ej: Av. Belgrano 1234" required>
-                </div>
-                <div class="form-row">
-                    <div class="form-group flex-1">
-                        <label for="visita-fecha">Fecha:</label>
-                        <input type="date" id="visita-fecha" required>
-                    </div>
-                    <div class="form-group flex-1">
-                        <label for="visita-falla">Falla / Reporte Técnico:</label>
-                        <input type="text" id="visita-falla" placeholder="Ej: Cortocircuito / No enfría" required>
-                    </div>
-                </div>
-                <button type="submit" class="btn-submit" style="background-color: #1a365d;">Agendar Visita</button>
-            </form>
 
-            <h3>Visitas Pendientes en Agenda</h3>
-            <div class="lista-contenedor" id="lista-visitas"></div>
-        </section>
-
-        <!-- PESTAÑA 3: BALANCE Y CAJA -->
-        <section id="tab-balance" class="tab-content">
-            <h2>Estado de Cuentas</h2>
-            
-            <div class="balance-cards">
-                <div class="card card-ingresos">
-                    <h3>Ingresos</h3>
-                    <p id="total-ingresos">$0,00</p>
-                </div>
-                <div class="card card-gastos">
-                    <h3>Gastos</h3>
-                    <p id="total-gastos">$0,00</p>
-                </div>
-                <div class="card card-por-cobrar">
-                    <h3>Por Cobrar</h3>
-                    <p id="total-por-cobrar">$0,00</p>
-                </div>
-                <div class="card card-neto">
-                    <h3>Balance Neto</h3>
-                    <p id="total-neto">$0,00</p>
-                </div>
-            </div>
-
-            <h3>Historial de Trabajos</h3>
-            <div class="tabla-contenedor">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Cliente / Detalle</th>
-                            <th>Monto</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="lista-trabajos"></tbody>
-                </table>
-            </div>
-        </section>
-    </div>
-
-    <script src="script.js"></script>
-</body>
-</html>
